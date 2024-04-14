@@ -1,14 +1,15 @@
-# Rapport Projet Météo
+# Devops - 20230369
+## TP1
 
 Ce projet (#20230369) a pour objectif de simplifier l'accès aux données météorologiques d'un lieu spécifique via l'API OpenWeather en développant un wrapper. Ce dernier est encapsulé dans une image Docker, offrant ainsi une distribution aisée et une utilisation optimale.
 
-## Contenu du Projet
+### Contenu du Projet
 
 - **weather-wrapper.py**: Un script Python qui utilise les coordonnées géographiques (latitude et longitude) et une clé d'API OpenWeather comme variables d'environnement pour récupérer les données météorologiques.
 
 - **Dockerfile**: Ce fichier décrit les étapes pour construire l'image Docker contenant le wrapper.
 
-## Étapes du Projet
+### Étapes du Projet
 
 1. **Création d'un compte sur OpenWeather et obtention d'une clé d'API**: Une clé d'API OpenWeather est requise pour accéder aux données météorologiques.
 
@@ -53,7 +54,7 @@ docker build -t nom_image .
 docker run --env LAT=<latitude> --env LONG=<longitude> --env API_KEY=<api_key> nom_image
 ```
 
-## Sécurité et Qualité
+### Sécurité et Qualité
 
 - **Vérification des vulnérabilités de l'image Docker**:
 L'analyse avec Trivy a révélé qu'il n'y a aucune CVE (Common Vulnerabilities and Exposures) dans l'image Docker `maregistry/api:1.0.0`. Pour exécuter l'analyse avec Trivy, utilisez la commande suivante :
@@ -69,7 +70,11 @@ docker run --rm -i hadolint/hadolint < Dockerfile
 - **Protection des données sensibles**:
 Aucune donnée sensible, telle que la clé d'API OpenWeather, n'est stockée dans l'image Docker pour garantir la sécurité des informations.
 
-## URLs Publiques
+### URLs Publiques
 
 - **Repository GitHub**: [URL_repository_GitHub](https://github.com/efrei-ADDA84/20230369.git)
 - **Registre DockerHub**: [URL_registry_DockerHub](https://hub.docker.com/repository/docker/aymenzem/api/general)
+
+## TP2
+
+## TP3 
