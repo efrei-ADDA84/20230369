@@ -12,6 +12,6 @@ WORKDIR /app
 
 COPY --from=builder /home/nonroot/.local/lib/python3.12/site-packages /home/nonroot/.local/lib/python3.12/site-packages
 
-COPY weather-wrapper-api.py .
+COPY weather-wrapper.py .
 
 ENTRYPOINT ["python", "weather-wrapper.py"]
