@@ -56,10 +56,10 @@ jobs:
         run: docker push efreidevops.azurecr.io/${{ secrets.AC_NAME }}:v1
 
       - name: Deploy to Azure Container Instance
-        uses: Azure/container-instance-action@v1
+        uses: azure/aci-deploy@v1
         with:
           resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
           name: ${{ secrets.AC_NAME }}
           image: efreidevops.azurecr.io/${{ secrets.ACR_REPOSITORY }}:${{ env.COMMIT_SHORT_SHA }}
           location: francecentral
-          dns-name-label: "devops-${{ secrets.AC_NAME }}"
+          dns-name-label: devops-${{ secrets.AC_NAME }}
