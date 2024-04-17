@@ -59,13 +59,13 @@ jobs:
         uses: azure/login@v1
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          
+
       - name: Deploy to Azure Container Instance
         uses: azure/aci-deploy@v1
         with:
           resource-group: ${{ secrets.RESOURCE_GROUP }}
           name: ${{ secrets.AC_NAME }}
-          image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.ACR_REPOSITORY }}:${{ env.COMMIT_SHORT_SHA }}
+          image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
           location: germanywestcentral
           dns-name-label: devops-${{ secrets.AC_NAME }}
           azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
