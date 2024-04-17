@@ -55,8 +55,11 @@ jobs:
       - name: Push Docker image to Azure Container Registry
         run: docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
       
-       
-      
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          
       - name: Deploy to Azure Container Instance
         uses: azure/aci-deploy@v1
         with:
