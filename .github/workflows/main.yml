@@ -46,20 +46,20 @@ jobs:
         uses: azure/docker-login@v1
         with:
           login-server: efreidevops.azurecr.io
-          username: ${{ secrets.ACR_USERNAME }}
-          password: ${{ secrets.ACR_PASSWORD }}
-
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
+        
       - name: Tag Docker image for Azure Container Registry
         run: docker tag aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }} efreidevops.azurecr.io/${{ secrets.AC_NAME }}:v1
-
+        
       - name: Push Docker image to Azure Container Registry
         run: docker push efreidevops.azurecr.io/${{ secrets.AC_NAME }}:v1
-
+        
       - name: Deploy to Azure Container Instance
         uses: azure/aci-deploy@v1
         with:
-          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          resource-group: ${{ secrets.RESOURCE_GROUP }}
           name: ${{ secrets.AC_NAME }}
           image: efreidevops.azurecr.io/${{ secrets.ACR_REPOSITORY }}:${{ env.COMMIT_SHORT_SHA }}
           location: francecentral
           dns-name-label: devops-${{ secrets.AC_NAME }}
+          azure-credentials: ${{ secrets.AZURE_CREDENTIALS }}
