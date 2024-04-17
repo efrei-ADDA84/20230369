@@ -11,16 +11,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
-      
+
       - name: Install Hadolint
         run: |
           wget -O hadolint https://github.com/hadolint/hadolint/releases/download/v2.7.0/hadolint-Linux-x86_64
           chmod +x hadolint
           sudo mv hadolint /usr/local/bin/hadolint
-      
+
       - name: Lint Dockerfile
         # Ignoring DL3007 because I cannot access a specific version of the chainguard package; only the latest version is available.
-        run: hadolint --ignore DL3007 tp2/Dockerfile 
+        run: hadolint --ignore DL3007 tp2/Dockerfile
 
       - name: Login to Docker Hub
         uses: docker/login-action@v1
@@ -33,7 +33,7 @@ jobs:
         run: |
           calculatedSha=$(git rev-parse --short "${{ github.sha }}")
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
-      
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
@@ -41,3 +41,25 @@ jobs:
           file: ./tp2/Dockerfile
           push: true
           tags: aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }}
+
+      - name: Login to Azure Container Registry
+        uses: azure/docker-login@v1
+        with:
+          login-server: efreidevops.azurecr.io
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
+
+      - name: Tag Docker image for Azure Container Registry
+        run: docker tag aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }} efreidevops.azurecr.io/${{ secrets.AC_NAME }}:v1
+
+      - name: Push Docker image to Azure Container Registry
+        run: docker push efreidevops.azurecr.io/${{ secrets.AC_NAME }}:v1
+
+      - name: Deploy to Azure Container Instance
+        uses: Azure/container-instance-action@v1
+        with:
+          resource-group: ${{ secrets.AZURE_RESOURCE_GROUP }}
+          name: ${{ secrets.AC_NAME }}
+          image: efreidevops.azurecr.io/${{ secrets.ACR_REPOSITORY }}:${{ env.COMMIT_SHORT_SHA }}
+          location: francecentral
+          dns-name-label: "devops-${{ secrets.AC_NAME }}"
