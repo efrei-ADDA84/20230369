@@ -81,5 +81,5 @@ jobs:
           dns-name-label: devops-${{ secrets.AC_NAME }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-          environment-variables: API_KEY=${{ secrets.API_KEY }}, PORT=80
-          ports: 80:80
+          environment-variables: API_KEY=${{ secrets.API_KEY }}
+          ports: 80
