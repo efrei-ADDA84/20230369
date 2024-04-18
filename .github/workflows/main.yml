@@ -48,37 +48,55 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
+          # Spécifie le répertoire contenant les fichiers nécessaires à la construction de l'image Docker.
           context: ./tp3
+          # Chemin vers le Dockerfile utilisé pour construire l'image.
           file: ./tp3/Dockerfile
+          # Indique que l'image doit être publiée après sa construction.
           push: true
+          # Tags de l'image Docker, généralement basés sur des informations comme le SHA de validation du commit.
           tags: aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }}
 
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
         with:
+          # L'URL du registre de conteneurs Azure.
           login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          # Le nom d'utilisateur pour l'authentification.
           username: ${{ secrets.REGISTRY_USERNAME }}
+          # Le mot de passe pour l'authentification.
           password: ${{ secrets.REGISTRY_PASSWORD }}
         
       - name: Tag Docker image for Azure Container Registry
+        # Étiquetage de l'image Docker avec le nom du référentiel ACR.
         run: docker tag aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }} ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
         
       - name: Push Docker image to Azure Container Registry
+        # Publication de l'image Docker dans l'ACR.
         run: docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
-      
+        
       - name: Login to Azure
         uses: azure/login@v1
         with:
+          # Les informations d'identification du principal de service utilisé pour s'authentifier auprès de l'environnement Azure.
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Deploy to Azure Container Instance
         uses: azure/aci-deploy@v1
         with:
+          # Spécifie le nom du groupe de ressources Azure dans lequel l'instance de conteneur sera déployée.
           resource-group: ${{ secrets.RESOURCE_GROUP }}
+          # Définit le nom de l'instance de conteneur à déployer.
           name: ${{ secrets.AC_NAME }}
+          # Spécifie l'URL de l'image Docker à déployer.
           image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
+          # Indique la région Azure dans laquelle déployer l'instance de conteneur.
           location: germanywestcentral
+          # Ce libellé DNS est utilisé pour l'instance de conteneur afin d'exposer l'API via Internet.
           dns-name-label: devops-${{ secrets.AC_NAME }}
+          # Fournit les informations d'identification nécessaires pour accéder au registre Azure Container Registry (ACR).
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          # Définit des variables d'environnement sécurisées qui seront injectées dans l'instance de conteneur.
           secure-environment-variables: API_KEY=${{ secrets.API_KEY }}
+        

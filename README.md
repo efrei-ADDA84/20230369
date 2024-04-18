@@ -213,3 +213,89 @@ docker run -d --network host --env API_KEY=<API_KEY> aymenzem/efrei-devops-tp2:1
 ```
 curl "http://localhost:8081/?lat=5.902785&lon=102.754175"
 ```
+
+## TP3 
+Dans le cadre de ce TP, notre objectif est de déployer une API dockerisée sur Azure Container Instance (ACI) en utilisant GitHub Actions pour automatiser le processus. Pour ce faire, nous avons créé un nouveau dossier nommé tp3, contenant un code légèrement modifié. Nous avons également opté pour une autre image Python (`python:3.12-alpine`) que celle utilisée dans les TP précédents, car l'image de `chainguard` a rencontré quelques problèmes lors du déploiement sur ACI.
+
+Nous avons ensuite modifié le fichier workflow en y ajoutant les étapes nécessaires pour la construction de l'image Docker, son déploiement sur Azure Container Registry (ACR), et enfin son déploiement sur Azure Container Instance (ACI). Ces modifications sont expliquées dans ce qui suit.
+
+
+### Construction et Publication de l'Image Docker :
+Nous avons utilisé l'action GitHub `docker/build-push-action` pour construire l'image Docker à partir du Dockerfile fourni et la publier dans le registre Docker Hub. Cette action garantit que l'image Docker est construite et versionnée de manière cohérente.
+
+```yaml
+- name: Build and push Docker image
+  uses: docker/build-push-action@v2
+  with:
+    # Spécifie le répertoire contenant les fichiers nécessaires à la construction de l'image Docker.
+    context: ./tp3
+    # Chemin vers le Dockerfile utilisé pour construire l'image.
+    file: ./tp3/Dockerfile
+    # Indique que l'image doit être publiée après sa construction.
+    push: true
+    # Tags de l'image Docker, généralement basés sur des informations comme le SHA de validation du commit.
+    tags: aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }}
+```
+
+### Connexion au Registre de Conteneurs Azure :
+Nous avons utilisé l'action GitHub `azure/docker-login` pour nous authentifier auprès du Registre de Conteneurs Azure. Cette action se connecte de manière sécurisée au registre ACR en utilisant les identifiants fournis et stockés en tant que secrets GitHub.
+
+```yaml
+- name: Login to Azure Container Registry
+  uses: azure/docker-login@v1
+  with:
+    # L'URL du registre de conteneurs Azure.
+    login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+    # Le nom d'utilisateur pour l'authentification.
+    username: ${{ secrets.REGISTRY_USERNAME }}
+    # Le mot de passe pour l'authentification.
+    password: ${{ secrets.REGISTRY_PASSWORD }}
+```
+
+### Étiquetage et Publication de l'Image Docker dans l'ACR :
+L'image Docker est étiquetée avec le nom du référentiel ACR et publiée dans l'ACR à l'aide de commandes Docker standard. Cette étape garantit que l'image Docker est disponible dans l'environnement cloud Azure.
+
+```yaml
+- name: Tag Docker image for Azure Container Registry
+  # Étiquetage de l'image Docker avec le nom du référentiel ACR.
+  run: docker tag aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }} ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
+        
+- name: Push Docker image to Azure Container Registry
+  # Publication de l'image Docker dans l'ACR.
+  run: docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
+```
+
+### Connexion à Azure :
+Nous nous sommes connectés à l'environnement Azure en utilisant l'action GitHub `azure/login`, qui s'authentifie auprès d'Azure en utilisant les informations d'identification du principal de service fournies et stockées en tant que secrets GitHub.
+
+```yaml
+- name: Login to Azure
+  uses: azure/login@v1
+  with:
+    # Les informations d'identification du principal de service utilisé pour s'authentifier auprès de l'environnement Azure.
+    creds: ${{ secrets.AZURE_CREDENTIALS }}
+```
+
+### Déploiement dans l'Instance de Conteneur Azure :
+Enfin, nous avons déployé l'image Docker dans l'Instance de Conteneur Azure en utilisant l'action GitHub `azure/aci-deploy`. Cette action provisionne une instance ACI avec l'image Docker provenant de l'ACR, configure le réseau et expose le point de terminaison de l'API.
+
+```yaml
+- name: Deploy to Azure Container Instance
+  uses: azure/aci-deploy@v1
+  with:
+    # Spécifie le nom du groupe de ressources Azure dans lequel l'instance de conteneur sera déployée.
+    resource-group: ${{ secrets.RESOURCE_GROUP }}
+    # Définit le nom de l'instance de conteneur à déployer.
+    name: ${{ secrets.AC_NAME }}
+    # Spécifie l'URL de l'image Docker à déployer.
+    image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
+    # Indique la région Azure dans laquelle déployer l'instance de conteneur.
+    location: germanywestcentral
+    # Ce libellé DNS est utilisé pour l'instance de conteneur afin d'exposer l'API via Internet.
+    dns-name-label: devops-${{ secrets.AC_NAME }}
+    # Fournit les informations d'identification nécessaires pour accéder au registre Azure Container Registry (ACR).
+    registry-username: ${{ secrets.REGISTRY_USERNAME }}
+    registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+    # Définit des variables d'environnement sécurisées qui seront injectées dans l'instance de conteneur.
+    secure-environment-variables: API_KEY=${{ secrets.API_KEY }}
+```

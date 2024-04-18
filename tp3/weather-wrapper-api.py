@@ -25,15 +25,19 @@ def get_weather():
         return jsonify({"error": data["message"]}), response.status_code
 
 def format_weather_data(weather_data):
-    formatted_weather = f"Weather in {weather_data['name']} ({weather_data['coord']['lat']}, {weather_data['coord']['lon']}):\n"
-    formatted_weather += f"Description: {weather_data['weather'][0]['description']}\n"
-    formatted_weather += f"Temperature: {weather_data['main']['temp']}°C\n"
-    formatted_weather += f"Feels Like: {weather_data['main']['feels_like']}°C\n"
-    formatted_weather += f"Minimum Temperature: {weather_data['main']['temp_min']}°C\n"
-    formatted_weather += f"Maximum Temperature: {weather_data['main']['temp_max']}°C\n"
-    formatted_weather += f"Humidity: {weather_data['main']['humidity']}%\n"
-    formatted_weather += f"Wind Speed: {weather_data['wind']['speed']} m/s\n"
-    formatted_weather += f"Wind Direction: {weather_data['wind']['deg']}°\n"
+    formatted_weather = {
+        "location": weather_data['name'],
+        "latitude": weather_data['coord']['lat'],
+        "longitude": weather_data['coord']['lon'],
+        "description": weather_data['weather'][0]['description'],
+        "temperature": f"{weather_data['main']['temp']} degrees Celsius",
+        "feels_like": f"{weather_data['main']['feels_like']} degrees Celsius",
+        "minimum_temperature": f"{weather_data['main']['temp_min']} degrees Celsius",
+        "maximum_temperature": f"{weather_data['main']['temp_max']} degrees Celsius",
+        "humidity": f"{weather_data['main']['humidity']}%",
+        "wind_speed": f"{weather_data['wind']['speed']} m/s",
+        "wind_direction": f"{weather_data['wind']['deg']} degrees"
+    }
     return formatted_weather
 
 if __name__ == '__main__':
