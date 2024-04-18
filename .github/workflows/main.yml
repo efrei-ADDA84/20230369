@@ -33,7 +33,8 @@ jobs:
         run: |
           calculatedSha=$(git rev-parse --short "${{ github.sha }}")
           echo "COMMIT_SHORT_SHA=$calculatedSha" >> $GITHUB_ENV
-
+      
+      # TP2 image
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
@@ -41,6 +42,16 @@ jobs:
           file: ./tp2/Dockerfile
           push: true
           tags: aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }}
+      
+          
+      # TP3 image 
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v2
+        with:
+          context: ./tp3
+          file: ./tp3/Dockerfile
+          push: true
+          tags: aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }}
 
       - name: Login to Azure Container Registry
         uses: azure/docker-login@v1
@@ -50,7 +61,7 @@ jobs:
           password: ${{ secrets.REGISTRY_PASSWORD }}
         
       - name: Tag Docker image for Azure Container Registry
-        run: docker tag aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }} ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
+        run: docker tag aymenzem/efrei-devops-tp3:${{ env.COMMIT_SHORT_SHA }} ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
         
       - name: Push Docker image to Azure Container Registry
         run: docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
@@ -70,5 +81,6 @@ jobs:
           dns-name-label: devops-${{ secrets.AC_NAME }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-          ports: 8081
+          secure-environment-variables: API_KEY=${{ secrets.API_KEY }}
+          ports: 80
           
