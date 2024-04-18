@@ -70,3 +70,4 @@ jobs:
           dns-name-label: devops-${{ secrets.AC_NAME }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
+          ports: '80:8081'
