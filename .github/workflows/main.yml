@@ -68,5 +68,5 @@ jobs:
           image: ${{ secrets.REGISTRY_LOGIN_SERVER }}/${{ secrets.AC_NAME }}:v1
           location: germanywestcentral
           dns-name-label: devops-${{ secrets.AC_NAME }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
+          registry-username: ${{ secrets.REGISTRY_USERNAME }}
+          registry-password: ${{ secrets.REGISTRY_PASSWORD }}
