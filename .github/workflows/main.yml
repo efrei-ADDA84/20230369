@@ -43,7 +43,7 @@ jobs:
           push: true
           tags: aymenzem/efrei-devops-tp2:${{ env.COMMIT_SHORT_SHA }}
       
-          
+
       # TP3 image 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
@@ -81,6 +81,5 @@ jobs:
           dns-name-label: devops-${{ secrets.AC_NAME }}
           registry-username: ${{ secrets.REGISTRY_USERNAME }}
           registry-password: ${{ secrets.REGISTRY_PASSWORD }}
-          secure-environment-variables: API_KEY=${{ secrets.API_KEY }}
+          environment-variables: API_KEY=${{ secrets.API_KEY }}
           ports: 80
-          
