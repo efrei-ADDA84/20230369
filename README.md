@@ -144,7 +144,7 @@ Un workflow GitHub Action a été configuré pour automatiser la construction et
 
 Remarque : Le warning DL3007 a été ignoré car la plateforme Chainguard, qui fournit des images Python sans vulnérabilités, fournit directement la dernière version en utilisant l'attribut "latest". Pour une version spécifique, une demande doit être faite.
 
-```
+```yaml
 name: Build and Push Docker Image
 
 on:
