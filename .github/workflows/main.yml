@@ -74,7 +74,7 @@ jobs:
           environment-variables: |
             [
               {
-                "name": "TARGET_PORT",
-                "value": "8081"
+                'name': 'PORT',
+                'value': '8081'
               }
             ]
