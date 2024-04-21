@@ -301,10 +301,10 @@ Enfin, nous avons déployé l'image Docker dans l'Instance de Conteneur Azure en
 ```
 
 ## TP4 
-Dans ce TP4, nous allons explorer l'utilisation de Terraform pour la gestion des ressources sur Azure. Ce TP sera divisé en deux parties : la partie code, où nous définirons l'infrastructure à l'aide de fichiers Terraform, et la partie exécution, où nous mettrons en œuvre les étapes nécessaires pour déployer et gérer ces ressources sur le cloud Azure.
+Dans ce TP4, nous allons explorer l'utilisation de Terraform pour la gestion des ressources sur Azure. Ce TP sera divisé en deux parties : la partie code, où nous définirons l'infrastructure à l'aide de fichiers Terraform, et la partie exécution, où nous mettrons en œuvre les étapes nécessaires pour déployer ces ressources, et se connecter à la machine virtuelle avec SSH.
 
 ### Code Tarraform
-#### Partie Déclaration de Variables:
+#### Partie Déclaration de Variables
 Dans cette première partie, nous avons défini les variables nécessaires pour notre configuration Terraform. Cela inclut des informations telles que l'ID d'abonnement Azure, le nom du groupe de ressources, la région, etc. Ces variables permettent une personnalisation facile de notre configuration et simplifient la gestion des valeurs réutilisables dans tout le code.
 
 ```terraform
@@ -358,7 +358,7 @@ data "azurerm_subnet" "subnet1" {
 }
 ```
 
-#### Provider Azure:
+#### Provider Azure
 Nous avons configuré le fournisseur Azure dans Terraform pour nous connecter à notre compte Azure. Cela inclut la spécification de l'ID d'abonnement et l'activation des fonctionnalités requises. Cette étape est cruciale car elle établit la connexion entre notre configuration Terraform et notre environnement Azure cible.
 
 ```terraform
@@ -379,7 +379,7 @@ provider "azurerm" {
   skip_provider_registration = true
 }
 ```
-#### Déclaration des Ressources:
+#### Déclaration des Ressources
 Nous avons déclaré différentes ressources Azure telles que les IP publiques, les machines virtuelles, les groupes de sécurité réseau (NSG), etc. Ces déclarations définissent les propriétés de chaque ressource, telles que le nom, la région, le type, etc. Utiliser Terraform pour déclarer des ressources nous permet d'adopter une approche infrastructure-as-code, où notre infrastructure est décrite de manière reproductible et versionnée.
 
 ```terraform
@@ -496,7 +496,7 @@ resource "azurerm_linux_virtual_machine" "main" {
 }
 ```
 
-#### Association NSG:
+#### Association NSG
 Nous avons associé les groupes de sécurité réseau (NSG) aux interfaces réseau pour contrôler le trafic entrant et sortant des machines virtuelles. Cette étape est essentielle pour garantir la sécurité de notre infrastructure en limitant l'accès aux ports et protocoles nécessaires.
 
 ```terraform
@@ -507,7 +507,7 @@ resource "azurerm_network_interface_security_group_association" "nsg_association
 }
 ```
 
-#### Génération de Clés SSH:
+#### Génération de Clés SSH
 Nous avons inclus une étape pour générer et enregistrer une paire de clés SSH (publique et privée) pour chaque machine virtuelle. Cela nous permet d'accéder de manière sécurisée à la machine virtuelle via SSH. Terraform nous permet d'exécuter des scripts locaux pour automatiser cette tâche, garantissant ainsi une configuration cohérente des clés SSH pour chaque déploiement. 
 
 ```terraform
@@ -579,9 +579,11 @@ Comparé à la CLI ou à l'interface utilisateur :
 - Terraform conserve un historique des modifications et offre une meilleure visibilité et un meilleur contrôle sur l'infrastructure, facilitant la collaboration et
 
 ### Exécution
-Pour exécuter le code Terraform, vous devez suivre les étapes suivantes dans le répertoire où se trouve votre fichier Terraform (habituellement `main.tf`)
+Pour exécuter le code Terraform, commencez par installer Terraform en suivant ce lien : https://developer.hashicorp.com/terraform/install
 
-Avant d'exécuter les commandes, assurez-vous de formater votre code Terraform de manière cohérente en utilisant la commande suivante :
+Ensuite, suivez ces étapes dans le répertoire contenant votre fichier Terraform (généralement `main.tf`).
+
+Avant de lancer les commandes, assurez-vous de formater votre code Terraform de manière cohérente en utilisant la commande suivante :
 
 ```bash
 terraform fmt
