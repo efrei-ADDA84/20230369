@@ -299,3 +299,339 @@ Enfin, nous avons déployé l'image Docker dans l'Instance de Conteneur Azure en
     # Définit des variables d'environnement sécurisées qui seront injectées dans l'instance de conteneur.
     secure-environment-variables: API_KEY=${{ secrets.API_KEY }}
 ```
+
+## TP4 
+Dans ce TP4, nous allons explorer l'utilisation de Terraform pour la gestion des ressources sur Azure. Ce TP sera divisé en deux parties : la partie code, où nous définirons l'infrastructure à l'aide de fichiers Terraform, et la partie exécution, où nous mettrons en œuvre les étapes nécessaires pour déployer et gérer ces ressources sur le cloud Azure.
+
+### Code Tarraform
+#### Partie Déclaration de Variables:
+Dans cette première partie, nous avons défini les variables nécessaires pour notre configuration Terraform. Cela inclut des informations telles que l'ID d'abonnement Azure, le nom du groupe de ressources, la région, etc. Ces variables permettent une personnalisation facile de notre configuration et simplifient la gestion des valeurs réutilisables dans tout le code.
+
+```terraform
+# Cette section définit les variables utilisées dans toute la configuration Terraform
+variable "subscription_id" {
+  description = "ID de l'abonnement Azure"
+  default     = "765266c6-9a23-4638-af32-dd1e32613047"
+}
+
+variable "resource_group_name" {
+  description = "Nom du groupe de ressources Azure"
+  default     = "ADDA84-CTP"
+}
+
+variable "location" {
+  description = "Région Azure"
+  default     = "francecentral"
+}
+
+variable "subnet_name" {
+  description = "Nom du sous-réseau existant"
+  default     = "internal"
+}
+
+variable "virtual_network_name" {
+  description = "Nom du réseau virtuel existant"
+  default     = "network-tp4"
+}
+
+variable "student_id" {
+  description = "Identifiant de l'étudiant"
+  type        = string
+  default     = "20230369"
+}
+
+# Bloc Terraform définissant les fournisseurs requis
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
+
+# Bloc de données pour le sous-réseau Azure qui récupère des informations sur un sous-réseau existant
+data "azurerm_subnet" "subnet1" {
+  name                 = var.subnet_name  
+  virtual_network_name = var.virtual_network_name  
+  resource_group_name  = var.resource_group_name  
+}
+```
+
+#### Provider Azure:
+Nous avons configuré le fournisseur Azure dans Terraform pour nous connecter à notre compte Azure. Cela inclut la spécification de l'ID d'abonnement et l'activation des fonctionnalités requises. Cette étape est cruciale car elle établit la connexion entre notre configuration Terraform et notre environnement Azure cible.
+
+```terraform
+# Bloc Terraform définissant les fournisseurs requis
+terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "=3.0.0"
+    }
+  }
+}
+
+# Bloc de fournisseur pour configurer le fournisseur Azure avec les détails d'abonnement
+provider "azurerm" {
+  features {}
+  subscription_id            = var.subscription_id  
+  skip_provider_registration = true
+}
+```
+#### Déclaration des Ressources:
+Nous avons déclaré différentes ressources Azure telles que les IP publiques, les machines virtuelles, les groupes de sécurité réseau (NSG), etc. Ces déclarations définissent les propriétés de chaque ressource, telles que le nom, la région, le type, etc. Utiliser Terraform pour déclarer des ressources nous permet d'adopter une approche infrastructure-as-code, où notre infrastructure est décrite de manière reproductible et versionnée.
+
+```terraform
+# Génération d'une clé privée SSH RSA avec une taille de 4096 bits
+resource "tls_private_key" "ssh_private_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Bloc de ressource pour définir une ressource IP publique Azure
+resource "azurerm_public_ip" "public_ip" {
+  name                = "devops-${var.student_id}-publicip"  
+  location            = var.location  
+  resource_group_name = var.resource_group_name  
+  allocation_method   = "Static"  
+  sku                 = "Standard"  
+}
+
+# Bloc de ressource qui définit un NSG Azure avec des règles de sécurité
+resource "azurerm_network_security_group" "nsg" {
+  name                = "nsg-${var.student_id}"  
+  location            = var.location  
+  resource_group_name = var.resource_group_name  
+
+  # Règles de sécurité autorisant le trafic SSH, HTTP et HTTPS
+  security_rule {
+    name                       = "AllowSSH"
+    priority                   = 100
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "22"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTP"
+    priority                   = 110
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "80"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+
+  security_rule {
+    name                       = "AllowHTTPS"
+    priority                   = 120
+    direction                  = "Inbound"
+    access                     = "Allow"
+    protocol                   = "Tcp"
+    source_port_range          = "*"
+    destination_port_range     = "443"
+    source_address_prefix      = "*"
+    destination_address_prefix = "*"
+  }
+}
+
+# Bloc de ressource pour définir une interface réseau Azure
+resource "azurerm_network_interface" "network_interface" {
+  name                = "nic-${var.student_id}"  
+  location            = var.location  
+  resource_group_name = var.resource_group_name  
+
+  # Configuration IP pour l'interface réseau
+  ip_configuration {
+    name                          = "ipconfig"  
+    subnet_id                     = data.azurerm_subnet.subnet1.id  
+    private_ip_address_allocation = "Dynamic"  
+    public_ip_address_id          = azurerm_public_ip.public_ip.id  
+  }
+}
+
+# Bloc de ressource pour définir une machine virtuelle Linux Azure
+resource "azurerm_linux_virtual_machine" "main" {
+  name                = "devops-${var.student_id}"  
+  resource_group_name = var.resource_group_name  
+  location            = var.location  
+  size                = "Standard_D2s_v3"  
+  admin_username      = "devops"  
+  computer_name       = "devops-${var.student_id}"  
+  # Spécifie les données personnalisées à fournir à la machine. 
+  # Sur les systèmes basés sur Linux, cela peut être utilisé comme un script cloud-init. Sur d'autres systèmes, cela sera copié en tant que fichier sur le disque.
+  custom_data         = base64encode(local.custom_data)
+
+  # ID des interfaces réseau attachées à la machine virtuelle
+  network_interface_ids = [
+    azurerm_network_interface.network_interface.id,
+  ]
+
+  # Clé SSH pour accéder à la machine virtuelle
+  admin_ssh_key {
+    username   = "devops"  
+    public_key = tls_private_key.ssh_private_key.public_key_openssh  
+  }
+
+  # Configuration du disque OS
+  os_disk {
+    caching              = "ReadWrite"  
+    storage_account_type = "Standard_LRS"  
+  }
+
+  # Référence de l'image source pour la machine virtuelle
+  source_image_reference {
+    publisher = "Canonical"  
+    offer     = "0001-com-ubuntu-server-jammy"  
+    sku       = "22_04-lts"  
+    version   = "latest"  
+  }
+}
+```
+
+#### Association NSG:
+Nous avons associé les groupes de sécurité réseau (NSG) aux interfaces réseau pour contrôler le trafic entrant et sortant des machines virtuelles. Cette étape est essentielle pour garantir la sécurité de notre infrastructure en limitant l'accès aux ports et protocoles nécessaires.
+
+```terraform
+# Bloc de ressource pour associer un NSG à une interface réseau
+resource "azurerm_network_interface_security_group_association" "nsg_association" {
+  network_interface_id      = azurerm_network_interface.network_interface.id  
+  network_security_group_id = azurerm_network_security_group.nsg.id  
+}
+```
+
+#### Génération de Clés SSH:
+Nous avons inclus une étape pour générer et enregistrer une paire de clés SSH (publique et privée) pour chaque machine virtuelle. Cela nous permet d'accéder de manière sécurisée à la machine virtuelle via SSH. Terraform nous permet d'exécuter des scripts locaux pour automatiser cette tâche, garantissant ainsi une configuration cohérente des clés SSH pour chaque déploiement. 
+
+```terraform
+resource "tls_private_key" "ssh_private_key" {
+  algorithm = "RSA"
+  rsa_bits  = 4096
+}
+
+# Bloc de ressource pour exécuter une commande locale afin de générer et enregistrer une clé SSH
+resource "null_resource" "generate_and_save_ssh_key" {
+  provisioner "local-exec" {
+    command = <<-EOT
+      echo '${tls_private_key.ssh_private_key.public_key_openssh}' > ~/.ssh/id_rsa.pub
+      chmod 644 ~/.ssh/id_rsa.pub
+    EOT
+  }
+}
+```
+
+La clé privée générée sera ensuite sortie (output) de manière sécurisée à l'aide de Terraform. Cela signifie que Terraform fournira la clé privée sous forme de sortie à la fin du déploiement, mais cette sortie sera marquée comme sensible (sensitive), ce qui garantit que la clé privée ne sera pas affichée dans les journaux ou dans d'autres sorties non sécurisées de Terraform
+
+```terraform
+# Bloc de sortie pour exposer le contenu de la clé privée
+output "private_key_content" {
+  value     = tls_private_key.ssh_private_key.private_key_pem  
+  sensitive = true  
+}
+```
+
+#### Exécution d'un script au démarrage pour installer Docker via cloud-init
+Cette étape de code Terraform définit une valeur locale nommée custom_data, qui contient un script Cloud-init pour installer Docker lors du démarrage des machines virtuelles Azure. Ce script est ensuite encodé en base64 et injecté dans la configuration de la machine virtuelle.
+
+```terraform
+# Définition de la valeur locale custom_data, à utiliser ultérieurement pour injecter des données Cloud-init dans les machines virtuelles
+locals {
+  custom_data = <<-EOF
+                #cloud-config
+                package_update: true
+                package_upgrade: true
+                packages:
+                  - docker.io
+                EOF
+}
+
+# Bloc de ressource pour définir une machine virtuelle Linux Azure
+resource "azurerm_linux_virtual_machine" "main" {
+
+  ...
+  
+  # Spécifie les données personnalisées à fournir à la machine. 
+  # Sur les systèmes basés sur Linux, cela peut être utilisé comme un script cloud-init. Sur d'autres systèmes, cela sera copié en tant que fichier sur le disque.
+  custom_data         = base64encode(local.custom_data)   
+  
+  ...
+}
+```
+
+
+### Intérêt de l'utilisation de Terraform pour déployer des ressources sur le cloud
+L'utilisation de Terraform pour déployer des ressources sur le cloud présente plusieurs avantages :
+- **Déclaratif et Infrastructure as Code (IaC)** : Facilite la gestion, la réutilisation et la collaboration grâce à la définition déclarative de l'infrastructure.
+- **Multicloud** : Prend en charge plusieurs fournisseurs de cloud pour déployer sur différentes plateformes avec un seul outil.
+- **Gestion du cycle de vie** : Gère le cycle complet des ressources, de la création à la suppression, de manière cohérente.
+- **Idempotence** : Les déploiements sont idempotents, évitant la création de doublons de ressources.
+- **Planification et validation** : Permet de visualiser les changements avant de les appliquer, réduisant les risques d'erreurs.
+
+Comparé à la CLI ou à l'interface utilisateur :
+- La CLI et l'interface utilisateur sont adaptées pour des tâches ponctuelles, tandis que Terraform est mieux adapté pour la gestion automatisée à grande échelle.
+- Terraform conserve un historique des modifications et offre une meilleure visibilité et un meilleur contrôle sur l'infrastructure, facilitant la collaboration et
+
+### Exécution
+Pour exécuter le code Terraform, vous devez suivre les étapes suivantes dans le répertoire où se trouve votre fichier Terraform (habituellement `main.tf`)
+
+Avant d'exécuter les commandes, assurez-vous de formater votre code Terraform de manière cohérente en utilisant la commande suivante :
+
+```bash
+terraform fmt
+```
+
+#### Initialisation
+Exécutez la commande suivante pour initialiser Terraform et télécharger les plugins nécessaires :
+
+```bash
+terraform init
+```
+
+#### Planification
+Exécutez la commande suivante pour générer un plan d'exécution. Cette étape vous permet de voir quels changements Terraform va apporter à votre infrastructure avant de les appliquer :
+```bash
+terraform plan -out=tfplan
+```
+
+#### Application
+Si le plan vous convient, appliquez les changements en exécutant la commande suivante. Terraform demandera confirmation avant d'appliquer les modifications :
+
+```bash
+terraform apply "tfplan"
+```
+
+L'adresse ip publique de la machine devrait s'afficher dans les logs. Assurez-vous de la noter, car vous en aurez besoin pour vous connecter à la machine virtuelle.
+
+#### Récupération de la clé privé SSH
+La clé privé est une information sensible qui ne s'affiche pas directement dans les logs, on doit la récuperer et la mettre dans le fichier "id_rsa", en utilisant la commande :
+
+```bash
+terraform output -raw private_key_content > id_rsa
+```
+
+Ensuite, pour renforcer la sécurité de ce fichier, exécutez la commande :
+```bash
+chmod 600 id_rsa
+```
+
+#### Connexion à la machine en SSH
+Après avoir récupéré la clé privée, vous pouvez vous connecter à la machine virtuelle en utilisant SSH avec la commande suivante :
+
+```bash
+ssh -i id_rsa devops@<ADRESSE_IP_PUBLIQUE>
+```
+Remplacez <ADRESSE_IP_PUBLIQUE> par l'adresse IP publique de la machine virtuelle que vous avez notée précédemment.
+
+#### Destruction
+Si vous souhaitez supprimer les ressources créées par Terraform, vous pouvez exécuter la commande suivante :
+
+```bash
+terraform destroy
+```
